@@ -1,0 +1,24 @@
+{
+  "name": "data-stockflow-cf",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:api": "pnpm --filter @stockflow/api dev",
+    "dev:web": "pnpm --filter @stockflow/web dev",
+    "build:api": "pnpm --filter @stockflow/api build",
+    "build:web": "pnpm --filter @stockflow/web build",
+    "build": "pnpm -r build",
+    "db:generate": "pnpm --filter @stockflow/api db:generate",
+    "db:migrate": "pnpm --filter @stockflow/api db:migrate",
+    "db:push": "pnpm --filter @stockflow/api db:push",
+    "db:studio": "pnpm --filter @stockflow/api db:studio"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/node": "^22.15.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}
