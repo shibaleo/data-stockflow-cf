@@ -42,7 +42,7 @@ v1.use("*", async (c, next) => {
 v1.route("/roles", roles);
 v1.route("/users", users);
 v1.route("/books", books);
-v1.route("/accounts", accounts);
+v1.route("/books/:bookId/accounts", accounts);
 v1.route("/counterparties", counterparties);
 
 // Protected routes — transactions
