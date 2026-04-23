@@ -13,7 +13,13 @@ const client = postgres(databaseUrl ?? "", {
   idle_timeout: 20,
   connect_timeout: 10,
   types: {
-    bigint: postgres.BigInt,
+    // Parse PostgreSQL int8 (bigint, OID 20) as JavaScript number
+    bigint: {
+      to: 20,
+      from: [20],
+      serialize: (x: number) => String(x),
+      parse: (x: string) => Number(x),
+    },
   },
 });
 

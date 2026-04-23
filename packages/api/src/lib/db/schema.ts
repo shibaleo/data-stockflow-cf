@@ -18,12 +18,9 @@ import { sql } from "drizzle-orm";
 export const s = pgSchema("data_stockflow");
 
 // ============================================================
-// SEQUENCES (8 — v1 の 12 から削減)
+// SEQUENCES (7)
 // ============================================================
 
-export const tenantKeySeq = s.sequence("tenant_key_seq", {
-  startWith: 100000000000,
-});
 export const roleKeySeq = s.sequence("role_key_seq", {
   startWith: 100000000000,
 });
@@ -47,31 +44,8 @@ export const journalKeySeq = s.sequence("journal_key_seq", {
 });
 
 // ============================================================
-// 基盤系 (tenant, role, user)
+// 基盤系 (role, user)
 // ============================================================
-
-export const tenant = s.table(
-  "tenant",
-  {
-    key: bigint("key", { mode: "number" })
-      .default(sql`nextval('data_stockflow.tenant_key_seq')`)
-      .notNull(),
-    revision: integer("revision").default(1).notNull(),
-    created_at: timestamp("created_at", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    valid_from: timestamp("valid_from", { withTimezone: true })
-      .defaultNow()
-      .notNull(),
-    valid_to: timestamp("valid_to", { withTimezone: true }),
-    lines_hash: text("lines_hash").notNull(),
-    prev_revision_hash: text("prev_revision_hash").notNull(),
-    revision_hash: text("revision_hash").notNull(),
-    name: text("name").notNull(),
-    locked_until: timestamp("locked_until", { withTimezone: true }),
-  },
-  (t) => [primaryKey({ columns: [t.key, t.revision] })]
-);
 
 export const role = s.table(
   "role",
@@ -117,7 +91,6 @@ export const user = s.table(
     lines_hash: text("lines_hash").notNull(),
     prev_revision_hash: text("prev_revision_hash").notNull(),
     revision_hash: text("revision_hash").notNull(),
-    tenant_key: bigint("tenant_key", { mode: "number" }).notNull(),
     role_key: bigint("role_key", { mode: "number" }).notNull(),
     code: text("code").notNull(),
     name: text("name").notNull(),
@@ -128,11 +101,7 @@ export const user = s.table(
   },
   (t) => [
     primaryKey({ columns: [t.key, t.revision] }),
-    uniqueIndex("user_tenant_key_code_revision_key").on(
-      t.tenant_key,
-      t.code,
-      t.revision
-    ),
+    uniqueIndex("user_code_revision_key").on(t.code, t.revision),
   ]
 );
 
@@ -158,7 +127,6 @@ export const book = s.table(
     prev_revision_hash: text("prev_revision_hash").notNull(),
     revision_hash: text("revision_hash").notNull(),
     created_by: bigint("created_by", { mode: "number" }).notNull(),
-    tenant_key: bigint("tenant_key", { mode: "number" }).notNull(),
     code: text("code").notNull(),
     name: text("name").notNull(),
     unit: text("unit").notNull(),
@@ -176,11 +144,7 @@ export const book = s.table(
   },
   (t) => [
     primaryKey({ columns: [t.key, t.revision] }),
-    uniqueIndex("book_tenant_key_code_revision_key").on(
-      t.tenant_key,
-      t.code,
-      t.revision
-    ),
+    uniqueIndex("book_code_revision_key").on(t.code, t.revision),
   ]
 );
 
@@ -242,7 +206,6 @@ export const counterparty = s.table(
     prev_revision_hash: text("prev_revision_hash").notNull(),
     revision_hash: text("revision_hash").notNull(),
     created_by: bigint("created_by", { mode: "number" }).notNull(),
-    tenant_key: bigint("tenant_key", { mode: "number" }).notNull(),
     code: text("code").notNull(),
     name: text("name").notNull(),
     type: text("type"),
@@ -256,11 +219,7 @@ export const counterparty = s.table(
   },
   (t) => [
     primaryKey({ columns: [t.key, t.revision] }),
-    uniqueIndex("counterparty_tenant_key_code_revision_key").on(
-      t.tenant_key,
-      t.code,
-      t.revision
-    ),
+    uniqueIndex("counterparty_code_revision_key").on(t.code, t.revision),
   ]
 );
 
@@ -286,7 +245,6 @@ export const voucher = s.table(
     prev_revision_hash: text("prev_revision_hash").notNull(),
     revision_hash: text("revision_hash").notNull(),
     created_by: bigint("created_by", { mode: "number" }).notNull(),
-    tenant_key: bigint("tenant_key", { mode: "number" }).notNull(),
     idempotency_key: text("idempotency_key").notNull(),
     voucher_code: text("voucher_code"),
     description: text("description"),
@@ -302,10 +260,10 @@ export const voucher = s.table(
   (t) => [
     primaryKey({ columns: [t.key, t.revision] }),
     uniqueIndex("uq_voucher_idempotency")
-      .on(t.tenant_key, t.idempotency_key)
+      .on(t.idempotency_key)
       .where(sql`revision = 1`),
     uniqueIndex("uq_voucher_code")
-      .on(t.tenant_key, t.voucher_code)
+      .on(t.voucher_code)
       .where(sql`voucher_code IS NOT NULL AND revision = 1`),
   ]
 );
@@ -328,7 +286,6 @@ export const journal = s.table(
     prev_revision_hash: text("prev_revision_hash").notNull(),
     revision_hash: text("revision_hash").notNull(),
     created_by: bigint("created_by", { mode: "number" }).notNull(),
-    tenant_key: bigint("tenant_key", { mode: "number" }).notNull(),
     voucher_key: bigint("voucher_key", { mode: "number" }).notNull(),
     book_key: bigint("book_key", { mode: "number" }).notNull(),
     posted_at: timestamp("posted_at", { withTimezone: true }).notNull(),
@@ -354,7 +311,6 @@ export const journalLine = s.table(
     uuid: uuid("uuid").defaultRandom().primaryKey(),
     journal_key: bigint("journal_key", { mode: "number" }).notNull(),
     journal_revision: integer("journal_revision").notNull(),
-    tenant_key: bigint("tenant_key", { mode: "number" }).notNull(),
     sort_order: integer("sort_order").notNull(),
     side: text("side").notNull(),
     account_key: bigint("account_key", { mode: "number" }).notNull(),
@@ -380,7 +336,6 @@ export const apiKey = s.table(
   {
     uuid: uuid("uuid").defaultRandom().primaryKey(),
     user_key: bigint("user_key", { mode: "number" }).notNull(),
-    tenant_key: bigint("tenant_key", { mode: "number" }).notNull(),
     name: text("name").notNull(),
     key_prefix: text("key_prefix").notNull(),
     key_hash: text("key_hash").notNull(),
@@ -398,14 +353,13 @@ export const apiKey = s.table(
 );
 
 // ============================================================
-// 監査ログ (system_log + event_log → audit_log に統合)
+// 監査ログ
 // ============================================================
 
 export const auditLog = s.table(
   "audit_log",
   {
     uuid: uuid("uuid").defaultRandom().primaryKey(),
-    tenant_key: bigint("tenant_key", { mode: "number" }),
     user_key: bigint("user_key", { mode: "number" }).notNull(),
     user_name: text("user_name").notNull(),
     user_role: text("user_role").notNull(),
@@ -422,7 +376,7 @@ export const auditLog = s.table(
       .notNull(),
   },
   (t) => [
-    index("idx_audit_log_tenant_created").on(t.tenant_key, t.created_at),
+    index("idx_audit_log_created").on(t.created_at),
     index("idx_audit_log_entity").on(t.entity_type, t.entity_key),
   ]
 );

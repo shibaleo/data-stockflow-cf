@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "pnpm --filter @stockflow/api --filter @stockflow/web -r --parallel dev",
     "dev:api": "pnpm --filter @stockflow/api dev",
     "dev:web": "pnpm --filter @stockflow/web dev",
     "build:api": "pnpm --filter @stockflow/api build",
